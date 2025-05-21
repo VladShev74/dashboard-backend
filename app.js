@@ -24,10 +24,13 @@ let nextClassId = 1
 let nextPlanId = 1
 
 const fitnessClasses = [
-    // { id: Date.now() + 1, name: 'Yoga Basics', time: '07:00', day: 'Monday', trainer: 'Jane Doe' },
-    // { id: Date.now() + 2, name: 'HIIT Workout', time: '18:00', day: 'Tuesday', trainer: 'John Smith' },
+    { id: Date.now() + 1, name: 'Yoga Basics', time: '07:00', day: 'Monday', trainer: 'Jane Doe' },
+    { id: Date.now() + 2, name: 'HIIT Workout', time: '18:00', day: 'Tuesday', trainer: 'John Smith' },
   ]
-const memberPlans = []
+const memberPlans = [
+  { id: Date.now() - 1, name: 'Basic Plan', duration: 1, price: 30 },
+  { id: Date.now() - 2, name: 'Annual Plan', duration: 12, price: 300 },
+]
 
 // === Utility functions ===
 
