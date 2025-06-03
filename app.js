@@ -3,9 +3,8 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var cors = require('cors');
-
-// var indexRouter = require('./routes/index');
-// var usersRouter = require('./routes/users');
+const { MongoClient, ServerApiVersion, ObjectId, ReturnDocument } = require('mongodb');
+require('dotenv').config();
 
 var app = express();
 
@@ -14,78 +13,179 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-// app.use(express.static(path.join(__dirname, 'public')));
 
-// app.use('/', indexRouter);
-// app.use('/users', usersRouter);
+
+const db_connection_string = `mongodb+srv://admin:${process.env.DB_CONNECTION_PASS}@cluster0.4w4dva7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+const client = new MongoClient(db_connection_string, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true
+  }
+})
+
+async function connectDB() {
+  try {
+    await client.connect()
+    await client.db("fitness_dashboard").command({ping : 1})
+    console.log("Connection to DB successful")
+  } catch (err) {
+    console.error("Error during DB connection: " + err)
+  }
+}
+
+connectDB();
 
 // In-memory store (to be replaced by DB later)
 let nextClassId = 1
 let nextPlanId = 1
 
-const fitnessClasses = [
-    { id: Date.now() + 1, name: 'Yoga Basics', time: '07:00', day: 'Monday', trainer: 'Jane Doe' },
-    { id: Date.now() + 2, name: 'HIIT Workout', time: '18:00', day: 'Tuesday', trainer: 'John Smith' },
-  ]
-const memberPlans = [
-  { id: Date.now() - 1, name: 'Basic Plan', duration: 1, price: 30 },
-  { id: Date.now() - 2, name: 'Annual Plan', duration: 12, price: 300 },
-]
-
 // === Utility functions ===
 
-function getAllClasses() {
-  return fitnessClasses
+// =================================
+//              Classes            =
+// =================================
+function classesFromDB() {
+  return client.db("fitness-dashboard").collection("fitnessClasses")
 }
 
-function getClassById(id) {
-  return fitnessClasses.find(cls => cls.id == id)
+async function getAllClasses() {
+  try {
+    const data = await classesFromDB().find({}).toArray()
+    return data
+  } catch (err) {
+    console.error("Something went wrong querying all classes from DB: " + err)
+  }
 }
 
-function createClass(cls) {
-  cls.id = nextClassId++
-  fitnessClasses.push(cls)
-  return cls
+async function getClassById(objectId) {
+  try {
+    if(!ObjectId.isValid(objectId)) {
+      console.error(" ObjectId is not valid for getClassById")
+      return null
+    }
+
+    const oID = new ObjectId(objectId)
+    const data = await classesFromDB().findOne({ _id: oID })
+    return data
+  } catch (err) {
+    console.error("Something went wrong querying class with id " + objectId + "from DB: " + err)
+  }
 }
 
-function updateClass(id, cls) {
-  const index = fitnessClasses.findIndex(c => c.id == id)
-  if (index === -1) return null
-  cls.id = id
-  fitnessClasses[index] = cls
-  return cls
+async function createClass(classData) {
+  const newClass = {
+    ...classData,
+    lastModified: new Date() // Add a timestamp
+  };
+  const result = await classesFromDB().insertOne(newClass);
+  console.log(result)
+  newClass._id = result.insertedId
+  return newClass;
 }
 
-function deleteClass(id) {
-  const index = fitnessClasses.findIndex(c => c.id == id)
-  if (index === -1) return false
-  fitnessClasses.splice(index, 1)
-  return true
+async function updateClass(id, classData) {
+  if(!ObjectId.isValid(id)) {
+    console.error(" ObjectId is not valid for updateClass")
+    return null
+  }
+
+  const oID = new ObjectId(id)
+
+  const updateDocument = {
+    $set: {
+      ...classData,
+      lastModified: new Date()
+    }
+  }
+
+  const options = { returnDocument: "after" }
+
+  const updatedClass = await classesFromDB().findOneAndUpdate(
+    { _id: oID },
+    updateDocument,
+    options
+  )
+  return updatedClass
 }
 
-function getAllPlans() {
-  return memberPlans
+async function deleteClass(id) {
+  if(!ObjectId.isValid(id)) {
+    console.error(" ObjectId is not valid for deleteClass")
+    return null
+  }
+
+  const oID = new ObjectId(id)
+
+  const result = await classesFromDB().deleteOne({ _id: oID })
+
+  return result.deletedCount > 0
 }
 
-function createPlan(plan) {
-  plan.id = nextPlanId++
-  memberPlans.push(plan)
-  return plan
+// =================================
+//        Membership Plans         =
+// =================================
+function plansFromDB() {
+  return client.db("fitness-dashboard").collection("memberPlans")
 }
 
-function updatePlan(id, plan) {
-  const index = memberPlans.findIndex(p => p.id == id)
-  if (index === -1) return null
-  plan.id = id
-  memberPlans[index] = plan
-  return plan
+async function getAllPlans() {
+  // return memberPlans
+  try {
+    const data = await plansFromDB().find({}).toArray()
+    return data
+  } catch (err) {
+    console.error("Something went wrong querying all plans from DB: " + err)
+  }
 }
 
-function deletePlan(id) {
-  const index = memberPlans.findIndex(p => p.id == id)
-  if (index === -1) return false
-  memberPlans.splice(index, 1)
-  return true
+async function createPlan(planData) {
+  const newPlan = {
+    ...planData,
+    lastModified: new Date() // Add a timestamp
+  };
+  const result = await plansFromDB().insertOne(newPlan);
+  console.log(result)
+  newPlan._id = result.insertedId
+  return newPlan;
+}
+
+async function updatePlan(id, planData) {
+  if(!ObjectId.isValid(id)) {
+    console.error(" ObjectId is not valid for updatePlan")
+    return null
+  }
+
+  const oID = new ObjectId(id)
+
+  const updateDocument = {
+    $set: {
+      ...planData,
+      lastModified: new Date()
+    }
+  }
+
+  const options = { returnDocument: "after" }
+
+  const updatedPlan = await plansFromDB().findOneAndUpdate(
+    { _id: oID },
+    updateDocument,
+    options
+  )
+  return updatedPlan
+}
+
+async function deletePlan(id) {
+  if(!ObjectId.isValid(id)) {
+    console.error(" ObjectId is not valid for deletePlan")
+    return null
+  }
+
+  const oID = new ObjectId(id)
+
+  const result = await plansFromDB().deleteOne({ _id: oID })
+
+  return result.deletedCount > 0
 }
 
 // === API Endpoints ===
@@ -94,56 +194,115 @@ app.get('/', (req, res) => {
   res.send('Fitness Center Dashboard API is running')
 })
 
-// --- Fitness Classes ---
-app.get('/api/classes', (req, res) => {
-  res.json({ classes: getAllClasses() })
+// =================================
+//              Classes            =
+// =================================
+function mapClass(doc) {
+  if (!doc || !doc._id) return {};
+  return {
+    id: doc._id.toString(),
+    name: doc.name,
+    time: doc.time,
+    day: doc.day,
+    trainer: doc.trainer,
+    lastModified: doc.lastModified
+  }
+}
+
+app.get('/api/classes', async (req, res) => {
+  const data = await getAllClasses()
+  res.json({ classes: data.map(mapClass) })
 })
 
-app.get('/api/classes/:id', (req, res) => {
-  const cls = getClassById(req.params.id)
-  if (!cls) return res.status(404).send()
-  res.json(cls)
+app.get('/api/classes/:id', async (req, res) => {
+  const id = req.params.id;
+
+  if (!id) {
+    return res.status(400).json({ error: "Request must contain an id query parameter" });
+  }
+
+  const fitness_class = await getClassById(id)
+  if (!fitness_class) return res.status(404).json({ error: "Fitnes Class not found" });
+  res.json(mapClass(fitness_class))
 })
 
-app.post('/api/classes', (req, res) => {
+app.post('/api/classes', async (req, res) => {
   const newClass = req.body
-  const added = createClass(newClass)
-  res.status(201).json(added)
+  if (!newClass.name || !newClass.time === undefined || !newClass.day || !newClass.trainer) {
+    return res.status(400).json({ error: "Missing required fitness class fields (name, time, day, trainer)"})
+  }
+  const createdClassWithId = await createClass(newClass)
+  res.status(201).json(mapClass(createdClassWithId))
 })
 
-app.put('/api/classes/:id', (req, res) => {
-  const updated = updateClass(req.params.id, req.body)
-  if (!updated) return res.status(404).send()
-  res.json(updated)
+app.put('/api/classes/:id', async (req, res) => {
+  const classData = req.body;
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).json({ error: "Request must contain an id query parameter" });
+  }
+  if (!classData.name || !classData.time === undefined || !classData.day || !classData.trainer) {
+    return res.status(400).json({ error: "Missing required fitness class fields (name, time, day, trainer)"})
+  }
+  const updatedClassResult = await updateClass(id, classData)
+  if (!updatedClassResult) return res.status(404).json({ error: "Fitnes Class not found for update" });
+  res.json(mapClass(updatedClassResult.value))
 })
 
-app.delete('/api/classes/:id', (req, res) => {
-  const success = deleteClass(req.params.id)
-  if (!success) return res.status(404).json({ message: 'Not found' })
-  res.status(204).send()
+app.delete('/api/classes/:id', async (req, res) => {
+  const id = req.params.id;
+  const success = await deleteClass(id)
+  if (!success) return res.status(404).json({ kind: "Error", message: "Deletion Not Successful, class not found", id: id})
+  res.status(200).json({ kind: "Confirmation", message: "Deletion Successful", id: id})
 })
 
-// --- Member Plans ---
-app.get('/api/plans', (req, res) => {
-  res.json({ plans: getAllPlans() })
+// =================================
+//        Membership Plans         =
+// =================================
+function mapPlan(doc) {
+  if (!doc || !doc._id) return {};
+  return {
+    id: doc._id.toString(),
+    name: doc.name,
+    duration: doc.duration,
+    price: doc.price,
+    lastModified: doc.lastModified
+  }
+}
+
+app.get('/api/plans', async (req, res) => {
+  const data = await getAllPlans()
+  res.json({ plans: data.map(mapPlan) })
 })
 
-app.post('/api/plan', (req, res) => {
+app.post('/api/plan', async (req, res) => {
   const newPlan = req.body
-  const added = createPlan(newPlan)
-  res.status(201).json(added)
+  if (!newPlan.name || !newPlan.price === undefined || !newPlan.duration === undefined) {
+    return res.status(400).json({ error: "Missing required membership plan fields (name, duration, price)"})
+  }
+  const createdPlanWithId = await createPlan(newPlan)
+  res.status(201).json(mapPlan(createdPlanWithId))
 })
 
-app.put('/api/plan/:id', (req, res) => {
-  const updated = updatePlan(req.params.id, req.body)
-  if (!updated) return res.status(404).send()
-  res.json(updated)
+app.put('/api/plan/:id', async (req, res) => {
+  const planData = req.body;
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).json({ error: "Request must contain an id query parameter" });
+  }
+  if (!planData.name || !planData.price === undefined || !planData.duration === undefined) {
+    return res.status(400).json({ error: "Missing required membership plan fields (name, duration, price)"})
+  }
+  const updatedPlanResult = await updatePlan(id, planData)
+  if (!updatedPlanResult) return res.status(404).json({ error: "Membership plan not found for update" });
+  res.json(mapPlan(updatedPlanResult.value))
 })
 
-app.delete('/api/plan/:id', (req, res) => {
-  const success = deletePlan(req.params.id)
-  if (!success) return res.status(404).json({ message: 'Not found' })
-  res.status(204).send()
+app.delete('/api/plan/:id', async (req, res) => {
+  const id = req.params.id;
+  const success = await deletePlan(id)
+  if (!success) return res.status(404).json({ kind: "Error", message: "Deletion Not Successful, membership plan not found", id: id})
+  res.status(200).json({ kind: "Confirmation", message: "Deletion Successful", id: id})
 })
 
 module.exports = app;
