@@ -21,7 +21,11 @@ const client = new MongoClient(db_connection_string, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true
-  }
+  },
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  tls: true,
+  tlsAllowInvalidCertificates: true
 })
 
 async function connectDB() {
