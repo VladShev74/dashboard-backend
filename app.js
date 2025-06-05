@@ -22,8 +22,6 @@ const client = new MongoClient(db_connection_string, {
     strict: true,
     deprecationErrors: true
   },
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   tls: true,
   tlsAllowInvalidCertificates: true
 })
