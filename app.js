@@ -42,36 +42,6 @@ async function connectDB() {
 
 connectDB();
 
-// =================================
-//            WebSockets           =
-// =================================
-
-const { Server } = require("socket.io");
-const http = require('http');
-const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: { origin: "*" }, // Allow all origins for this simple example
-});
-
-io.on("connection", (socket) => {
-  // The 'socket' object represents a single connected client.
-  console.log(`A user connected with ID: ${socket.id}`);
-
-  // Listen for a custom event named 'chatMessage' from this client
-  socket.on("chatMessage", (msg) => {
-    console.log(`Message from ${socket.id}: ${msg}`);
-
-    // Broadcast the received message to ALL connected clients
-    io.emit("chatMessage", msg);
-  });
-
-  // Listen for the built-in 'disconnect' event
-  socket.on("disconnect", () => {
-    console.log(`User ${socket.id} disconnected.`);
-  });
-});
-
 // === Utility functions ===
 
 // =================================
@@ -274,12 +244,9 @@ app.post("/api/classes", async (req, res) => {
     !newClass.day ||
     !newClass.trainer
   ) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "Missing required fitness class fields (name, time, day, trainer)",
-      });
+    return res.status(400).json({
+      error: "Missing required fitness class fields (name, time, day, trainer)",
+    });
   }
   const createdClassWithId = await createClass(newClass);
   io.emit("classesUpdated");
@@ -300,12 +267,9 @@ app.put("/api/classes/:id", async (req, res) => {
     !classData.day ||
     !classData.trainer
   ) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "Missing required fitness class fields (name, time, day, trainer)",
-      });
+    return res.status(400).json({
+      error: "Missing required fitness class fields (name, time, day, trainer)",
+    });
   }
   const updatedClassResult = await updateClass(id, classData);
   if (!updatedClassResult)
@@ -318,13 +282,11 @@ app.delete("/api/classes/:id", async (req, res) => {
   const id = req.params.id;
   const success = await deleteClass(id);
   if (!success)
-    return res
-      .status(404)
-      .json({
-        kind: "Error",
-        message: "Deletion Not Successful, class not found",
-        id: id,
-      });
+    return res.status(404).json({
+      kind: "Error",
+      message: "Deletion Not Successful, class not found",
+      id: id,
+    });
   io.emit("classesUpdated");
   res
     .status(200)
@@ -357,12 +319,9 @@ app.post("/api/plan", async (req, res) => {
     !newPlan.price === undefined ||
     !newPlan.duration === undefined
   ) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "Missing required membership plan fields (name, duration, price)",
-      });
+    return res.status(400).json({
+      error: "Missing required membership plan fields (name, duration, price)",
+    });
   }
   const createdPlanWithId = await createPlan(newPlan);
   io.emit("plansUpdated");
@@ -382,12 +341,9 @@ app.put("/api/plan/:id", async (req, res) => {
     !planData.price === undefined ||
     !planData.duration === undefined
   ) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "Missing required membership plan fields (name, duration, price)",
-      });
+    return res.status(400).json({
+      error: "Missing required membership plan fields (name, duration, price)",
+    });
   }
   const updatedPlanResult = await updatePlan(id, planData);
   if (!updatedPlanResult)
@@ -402,22 +358,15 @@ app.delete("/api/plan/:id", async (req, res) => {
   const id = req.params.id;
   const success = await deletePlan(id);
   if (!success)
-    return res
-      .status(404)
-      .json({
-        kind: "Error",
-        message: "Deletion Not Successful, membership plan not found",
-        id: id,
-      });
+    return res.status(404).json({
+      kind: "Error",
+      message: "Deletion Not Successful, membership plan not found",
+      id: id,
+    });
   io.emit("plansUpdated");
   res
     .status(200)
     .json({ kind: "Confirmation", message: "Deletion Successful", id: id });
-});
-
-const PORT = process.env.PORT || 3002;
-server.listen(PORT, () => {
-  console.log(`Server and Socket.IO running on port ${PORT}`);
 });
 
 module.exports = app;
