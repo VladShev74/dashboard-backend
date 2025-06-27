@@ -249,7 +249,7 @@ app.post("/api/classes", async (req, res) => {
     });
   }
   const createdClassWithId = await createClass(newClass);
-  io.emit("classesUpdated");
+  req.app.get("io").emit("classesUpdated");
   res.status(201).json(mapClass(createdClassWithId));
 });
 
@@ -274,7 +274,7 @@ app.put("/api/classes/:id", async (req, res) => {
   const updatedClassResult = await updateClass(id, classData);
   if (!updatedClassResult)
     return res.status(404).json({ error: "Fitnes Class not found for update" });
-  io.emit("classesUpdated");
+  req.app.get("io").emit("classesUpdated");
   res.json(mapClass(updatedClassResult.value));
 });
 
@@ -287,7 +287,7 @@ app.delete("/api/classes/:id", async (req, res) => {
       message: "Deletion Not Successful, class not found",
       id: id,
     });
-  io.emit("classesUpdated");
+  req.app.get("io").emit("classesUpdated");
   res
     .status(200)
     .json({ kind: "Confirmation", message: "Deletion Successful", id: id });
@@ -324,7 +324,7 @@ app.post("/api/plan", async (req, res) => {
     });
   }
   const createdPlanWithId = await createPlan(newPlan);
-  io.emit("plansUpdated");
+  req.app.get("io").emit("plansUpdated");
   res.status(201).json(mapPlan(createdPlanWithId));
 });
 
@@ -350,7 +350,7 @@ app.put("/api/plan/:id", async (req, res) => {
     return res
       .status(404)
       .json({ error: "Membership plan not found for update" });
-  io.emit("plansUpdated");
+  req.app.get("io").emit("plansUpdated");
   res.json(mapPlan(updatedPlanResult.value));
 });
 
@@ -363,7 +363,7 @@ app.delete("/api/plan/:id", async (req, res) => {
       message: "Deletion Not Successful, membership plan not found",
       id: id,
     });
-  io.emit("plansUpdated");
+  req.app.get("io").emit("plansUpdated");
   res
     .status(200)
     .json({ kind: "Confirmation", message: "Deletion Successful", id: id });
