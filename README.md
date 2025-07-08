@@ -27,7 +27,7 @@ It provides RESTful endpoints for managing fitness classes and membership plans.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/dashboard-backend.git
+   git clone https://github.com/VladShev74/dashboard-backend.git
    cd dashboard-backend
    ```
 
