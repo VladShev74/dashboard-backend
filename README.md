@@ -89,7 +89,8 @@ DB_CONNECTION_PASS=your_mongodb_password
 
 ## Related
 
-- [dashboard-frontend](https://github.com/VladShev74/dashboard-frontend) — Vue 3 frontend for this API
+- [dashboard-frontend](https://github.com/VladShev74/dashboard-frontend)  Vue 3 frontend for this API
+- [Deployed Project](https://fitness-center-dashboard.netlify.app/) — takes around 30-50 seconds to boot up after long inactivity due to free hosting plan
 
 ---
 
